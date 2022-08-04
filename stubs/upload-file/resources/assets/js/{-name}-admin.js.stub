@@ -1,0 +1,224 @@
+"use strict";
+
+$(document).ready(function () {
+
+    $('.btn_select_file').on('click', function(e){
+        e.preventDefault();
+        $("#{names}:hidden").trigger('click');
+    });
+
+    var arrFiles = [];
+    var countArr = 0;
+    var {base}Url = $('#{base}Url').val();
+
+    $('input#{names}').change(function(){
+        var files = $(this)[0].files;
+
+        $.each(files, function (index, file) {
+
+            if(!findFile(file)){
+                var reader = new FileReader();
+
+                reader.onload = function (e) {
+                    var img = new Image;
+
+                    var urlImg = get_{name}_thumbnail_image_file(file.type);
+                    if(urlImg == undefined || urlImg == null || urlImg == '')
+                    {
+                        var html = `<div class="col-md-2 col-sm-3 col-4 file-{-name}-item-preview" data-name="${ escape(file.name) }">
+                            <div class="{name}_wrapper">
+                                <img src="${ e.target.result }" alt="${ escape(file.name) }" data-id="${ file.name }">
+                            </div>
+                        </div>`;
+                    }
+                    else
+                    {
+                            var html = `<div class="col-md-2 col-sm-3 col-4 file-{-name}-item-preview" data-name="${ escape(file.name) }">
+                            <div class="{name}_wrapper">
+                                <img src="${ {base}Url + urlImg }" alt="${ escape(file.name) }" data-id="${ file.name }">
+                            </div>
+                        </div>`;
+                    }
+
+                    $('.list-files-{-name} .row').append(html);
+                };
+                reader.readAsDataURL(file);
+
+                arrFiles.push(file);
+                countArr++;
+            }
+            else{
+                toastr.error('File was exist, please try chose other', 'Error');
+            }
+        });
+
+        initSortable();
+
+        $('.count-{-name}').text(`(${countArr} file select)`);
+        $('.reset-file').removeClass('hidden');
+
+        $('input#{names}')[0].files = fileListItems(arrFiles);
+    });
+
+    var initSortable = function () {
+        let el = document.getElementById('list-files-items');
+        Sortable.create(el, {
+            group: '{names}', // or { name: "...", pull: [true, false, clone], put: [true, false, array] }
+            sort: true, // sorting inside list
+            delay: 0, // time in milliseconds to define when the sorting should start
+            disabled: false, // Disables the sortable if set to true.
+            store: null, // @see Store
+            animation: 150, // ms, animation speed moving items when sorting, `0` — without animation
+            handle: '.file-{-name}-item',
+            ghostClass: 'sortable-ghost', // Class name for the drop placeholder
+            chosenClass: 'sortable-chosen', // Class name for the chosen item
+            dataIdAttr: 'data-id',
+
+            forceFallback: false, // ignore the HTML5 DnD behaviour and force the fallback to kick in
+            fallbackClass: 'sortable-fallback', // Class name for the cloned DOM Element when using forceFallback
+            fallbackOnBody: false,  // Appends the cloned DOM Element into the Document's Body
+
+            scroll: true, // or HTMLElement
+            scrollSensitivity: 30, // px, how near the mouse must be to an edge to start scrolling.
+            scrollSpeed: 10, // px
+
+            // dragging ended
+            onEnd: () => {
+                updateItems();
+            }
+        });
+    };
+
+    initSortable();
+
+    var updateItems = function () {
+        let items = [];
+        $.each($('.file-{-name}-item'), (index, widget) => {
+            items.push({
+                id: $(widget).data('id'),
+                name: $(widget).data('name'),
+                folder: $(widget).data('folder'),
+                mime_type: $(widget).data('mimetype'),
+                url: $(widget).data('url'),
+                options: $(widget).data('options')
+            });
+        });
+
+        $('#{name}-data').val(JSON.stringify(items));
+    };
+
+    var listFile{Name} = $('.list-files-{-name}');
+    var edit{Name}Modal = $('#edit-file-item');
+
+    $('.reset-file').on('click', function (event) {
+        event.preventDefault();
+        $('.list-files-{-name} .file-{-name}-item').remove();
+        updateItems();
+
+        $('.list-files-{-name} .file-{-name}-item-preview').remove();
+        countArr = 0;
+        $('.count-{-name}').text(`(${countArr} file select)`);
+        arrFiles = [];
+        $('input#{names}')[0].files = fileListItems(arrFiles);
+        $(this).addClass('hidden');
+    });
+
+    listFile{Name}.on('click', '.file-{-name}-item', function () {
+        var id = $(this).data('id');
+        $('#delete-file-item').data('id', id);
+        $('#update-file-item').data('id', id);
+        $('#file-item-description').val($(this).data('options'));
+        edit{Name}Modal.modal('show');
+    });
+
+    listFile{Name}.on('click', '.file-{-name}-item-preview', function (event) {
+        event.preventDefault();
+        var name = $(this).data('name');
+        $(this).remove();
+
+        var removeIndex = arrFiles.map(function(item) { return item.name; }).indexOf(name);
+        // remove object
+        arrFiles.splice(removeIndex, 1);
+
+        countArr--;
+        $('.count-{-name}').text(`(${countArr} file select)`);
+        $('input#{names}')[0].files = fileListItems(arrFiles);
+
+        if (listFile{Name}.find('.file-{-name}-item').length === 0 && listFile{Name}.find('.file-{-name}-item-preview').length === 0) {
+            $('.reset-file').addClass('hidden');
+        }
+    });
+
+    edit{Name}Modal.on('click', '#delete-file-item', function (event) {
+        event.preventDefault();
+        edit{Name}Modal.modal('hide');
+        listFile{Name}.find('.file-{-name}-item[data-id=' + $(this).data('id') + ']').remove();
+        updateItems();
+        if (listFile{Name}.find('.file-{-name}-item').length === 0 && listFile{Name}.find('.file-{-name}-item-preview').length === 0) {
+            $('.reset-file').addClass('hidden');
+        }
+    });
+
+    edit{Name}Modal.on('click', '#update-file-item', function (event) {
+        event.preventDefault();
+        edit{Name}Modal.modal('hide');
+        listFile{Name}.find('.file-{-name}-item[data-id=' + $(this).data('id') + ']').data('options', $('#file-item-description').val());
+        updateItems();
+    });
+
+    /**
+     * @params {array} files List of file items
+     * @return FileList
+     */
+    var fileListItems = function (files) {
+        var b = new ClipboardEvent("").clipboardData || new DataTransfer()
+        for (var i = 0, leng = files.length; i < leng; i++)
+        {
+            b.items.add(files[i]);
+        }
+
+        return b.files;
+    }
+
+    function findFile(file) {
+        return arrFiles.find(function(existingFile) {
+            return (
+                existingFile.name         === file.name &&
+                existingFile.lastModified === file.lastModified &&
+                existingFile.size         === file.size &&
+                existingFile.type         === file.type
+            )
+        });
+    }
+
+    function get_{name}_thumbnail_image_file(mimeType)
+    {
+        switch (mimeType) {
+            case 'application/pdf':
+                return '{-module}/images/pdf.png';
+                break;
+
+            case 'application/msword':
+            case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+                return '{-module}/images/word.png';
+                break;
+
+            case 'application/vnd.ms-excel':
+            case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+                return '{-module}/images/excel.png';
+                break;
+
+            case 'application/x-zip-compressed':
+                return '{-module}/images/zip.png';
+                break;
+
+            case 'application/vnd.rar':
+                return '{-module}/images/rar.png';
+                break;
+
+            default:
+                return '';
+                break;
+        }
+    }
+});

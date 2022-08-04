@@ -1,0 +1,15 @@
+//Add this code to function buildForm()
+
+if ($this->model->id) {
+            $this->addMetaBoxes([
+                '{-names}' => [
+                    'title'   => trans('plugins/{-module}::{-name}.{-names}'),
+                    'content' => $this->tableBuilder->create({Name}Table::class)
+                        ->setAjaxUrl(route(
+                            '{-name}.index',
+                            $this->getModel()->id ?: 0
+                        ))
+                        ->renderTable(),
+                ],
+            ]);
+        }

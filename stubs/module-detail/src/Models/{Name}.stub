@@ -1,0 +1,41 @@
+<?php
+
+namespace Botble\{Module}\Models;
+
+use Botble\Base\Traits\EnumCastable;
+use Botble\Base\Enums\BaseStatusEnum;
+use Botble\Base\Models\BaseModel;
+use Illuminate\Support\Facades\Storage;
+use RvMedia;
+
+class {Name} extends BaseModel
+{
+    use EnumCastable;
+
+    /**
+     * The database table used by the model.
+     *
+     * @var string
+     */
+    protected $table = '{names}';
+
+    /**
+     * @var array
+     */
+    protected $fillable = [
+        '{base}_id',
+        'name',
+        'description',
+        'link',
+        'image',
+        'order',
+    ];
+
+    /**
+     * Get the {base} that owns the file.
+     */
+    public function {base}()
+    {
+        return $this->belongsTo('Botble\{Module}\Models\{Base}', '{base}_id');
+    }
+}

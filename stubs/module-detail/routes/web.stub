@@ -1,0 +1,43 @@
+Route::group(['namespace' => 'Botble\{Module}\Http\Controllers', 'middleware' => ['web', 'core']], function () {
+    Route::group(['prefix' => BaseHelper::getAdminPrefix(), 'middleware' => 'auth'], function () {
+        Route::group(['prefix' => '{-base}', 'as' => '{-base}.'], function () {
+            Route::resource('', '{Base}Controller')->parameters(['' => '{-base}']);
+
+            // Add this content into Route.php
+            Route::delete('items/destroy', [
+                'as'         => 'deletes',
+                'uses'       => '{Base}Controller@deletes',
+                'permission' => '{-name}.destroy',
+            ]);
+
+            Route::post('sorting', [
+                'as'         => 'sorting',
+                'uses'       => '{Base}Controller@postSorting',
+                'permission' => '{-name}.edit',
+            ]);
+        });
+
+        Route::group(['prefix' => '{-names}', 'as' => '{-name}.'], function () {
+            Route::resource('', '{Name}Controller')->except([
+                'index',
+                'destroy',
+            ])->parameters(['' => '{-name}']);
+
+            Route::match(['GET', 'POST'], 'list/{id}', [
+                'as'   => 'index',
+                'uses' => '{Name}Controller@index',
+            ]);
+
+            Route::get('delete/{id}', [
+                'as'   => 'destroy',
+                'uses' => '{Name}Controller@destroy',
+            ]);
+
+            Route::delete('delete/{id}', [
+                'as'         => 'delete.post',
+                'uses'       => '{Name}Controller@postDelete',
+                'permission' => '{-name}.destroy',
+            ]);
+        });
+    });
+});

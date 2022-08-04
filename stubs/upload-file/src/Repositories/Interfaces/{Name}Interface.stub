@@ -1,0 +1,23 @@
+<?php
+
+namespace Botble\{Module}\Repositories\Interfaces;
+
+use Botble\Support\Repositories\Interfaces\RepositoryInterface;
+
+interface {Name}Interface extends RepositoryInterface
+{
+	/**
+     * {@inheritdoc}
+     */
+    public function createName($name, $folder);
+
+    /**
+     * {@inheritdoc}
+     */
+    public function checkIfExistsName($name, $folder);
+
+    /**
+     * {@inheritdoc}
+     */
+    public function createSlug($name, $extension, $folderPath);
+}

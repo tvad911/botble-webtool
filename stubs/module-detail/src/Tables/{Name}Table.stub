@@ -1,0 +1,141 @@
+<?php
+
+namespace Botble\{Module}\Tables;
+
+use BaseHelper;
+use Botble\{Module}\Repositories\Interfaces\{Name}Interface;
+use Botble\Table\Abstracts\TableAbstract;
+use Html;
+use Illuminate\Contracts\Routing\UrlGenerator;
+use Illuminate\Support\Facades\Auth;
+use Yajra\DataTables\DataTables;
+
+class {Name}Table extends TableAbstract
+{
+    /**
+     * @var string
+     */
+    protected $type = self::TABLE_TYPE_SIMPLE;
+
+    /**
+     * @var string
+     */
+    protected $view = 'plugins/{-module}::items';
+
+    /**
+     * @var {Name}Interface
+     */
+    protected $repository;
+
+    /**
+     * {Name}Table constructor.
+     * @param DataTables $table
+     * @param UrlGenerator $urlGenerator
+     * @param {Name}Interface ${+name}Repository
+     */
+    public function __construct(
+        DataTables $table,
+        UrlGenerator $urlGenerator,
+        {Name}Interface ${+name}Repository
+    ) {
+        parent::__construct($table, $urlGenerator);
+        $this->setOption('id', '{-names}-table');
+
+        $this->repository = ${+name}Repository;
+
+        if (!Auth::user()->hasAnyPermission(['{-name}.edit', '{-name}.destroy'])) {
+            $this->hasOperations = false;
+            $this->hasActions = false;
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function ajax()
+    {
+        $data = $this->table
+            ->eloquent($this->query())
+            ->editColumn('image', function ($item) {
+                return view('plugins/{-base}::partials.thumbnail', compact('item'))->render();
+            })
+            ->editColumn('title', function ($item) {
+                if (!Auth::user()->hasPermission('{-name}.edit')) {
+                    return $item->title;
+                }
+
+                return Html::link('#', $item->title, [
+                    'data-fancybox' => true,
+                    'data-type'     => 'ajax',
+                    'data-src'      => route('{-name}.edit', $item->id),
+                ]);
+            })
+            ->editColumn('checkbox', function ($item) {
+                return $this->getCheckbox($item->id);
+            })
+            ->editColumn('created_at', function ($item) {
+                return BaseHelper::formatDate($item->created_at);
+            })
+            ->addColumn('operations', function ($item) {
+                return view('plugins/{-module}::partials.actions', compact('item'))->render();
+            });
+
+        return $this->toJson($data);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function query()
+    {
+        $query = $this->repository->getModel()
+            ->select([
+                'id',
+                'name',
+                'image',
+                'order',
+                'created_at',
+            ])
+            ->orderBy('order')
+            ->where('{name}_id', request()->route()->parameter('id'));
+
+        return $this->applyScopes($query);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function columns()
+    {
+        return [
+                'id'         => [
+                    'title' => trans('core/base::tables.id'),
+                    'width' => '20px',
+                ],
+                'image'      => [
+                    'title' => trans('plugins/{-module}::{-name}.image'),
+                    'class' => 'text-center',
+                ],
+                'name'      => [
+                    'title' => trans('plugins/{-module}::{-name}.name'),
+                    'class' => 'text-start',
+                ],
+                'order'      => [
+                    'title' => trans('plugins/{-module}::{-name}.order'),
+                    'class' => 'text-start order-column',
+                ],
+                'created_at' => [
+                    'title' => trans('core/base::tables.created_at'),
+                    'width' => '100px',
+                ],
+            ] + $this->getOperationsHeading();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getOperationsHeading()
+    {
+        return array_merge(parent::getOperationsHeading(), ['operations' => ['width' => '170px']]);
+    }
+}

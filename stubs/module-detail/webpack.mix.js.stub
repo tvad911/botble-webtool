@@ -1,0 +1,3 @@
+// Add this code to webpack.mix.js
+.sass(source + '/resources/assets/sass/{-name}-admin.scss', dist + '/css')
+.js(source + '/resources/assets/js/{-name}-admin.js', dist + '/js')

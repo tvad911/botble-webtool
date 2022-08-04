@@ -1,0 +1,4 @@
+<a data-fancybox data-type="ajax" data-src="{{ route('{-name}.edit', $item->id) }}" href="javascript:;"
+   title="{{ $item->name }}">
+    <img src="{{ RvMedia::getImageUrl($item->image, 'thumb', false, RvMedia::getDefaultImage()) }}" alt="{{ $item->name }}" width="80">
+</a>

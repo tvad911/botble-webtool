@@ -1,0 +1,69 @@
+<?php
+
+use Botble\{Module}\Repositories\Interfaces\{Name}Interface;
+
+
+/**
+ * @var {Name}Interface;
+ */
+protected $simpleSliderItemRepository;
+
+/**
+ * SimpleSliderController constructor.
+ * @param {Base}Interface; ${+base}Repository
+ * @param {Name}Interface; ${+name}Repository
+ */
+public function __construct(
+    {Base}Interface; ${+base}Repository,
+    {Name}Interface; ${+name}Repository
+) {
+    $this->{+base}Repository = ${+base}Repository;
+    $this->{+name}Repository = ${+name}Repository;
+}
+
+/**
+ * @param Request $request
+ * @param $id
+ * @param BaseHttpResponse $response
+ * @return array|BaseHttpResponse
+ */
+public function destroy(Request $request, $id, BaseHttpResponse $response)
+{
+    try {
+        ${+base} = $this->{+base}Repository->findOrFail($id);
+        $this->{+base}Repository->delete(${+base});
+
+        event(new DeletedContentEvent({BASE}_MODULE_SCREEN_NAME, $request, ${+base}));
+
+        return $response->setMessage(trans('core/base::notices.delete_success_message'));
+    } catch (Exception $exception) {
+        return $response
+            ->setError()
+            ->setMessage($exception->getMessage());
+    }
+}
+
+/**
+ * @param Request $request
+ * @param BaseHttpResponse $response
+ * @return array|BaseHttpResponse|\Illuminate\Http\JsonResponse
+ * @throws Exception
+ */
+public function deletes(Request $request, BaseHttpResponse $response)
+{
+    return $this->executeDeleteItems($request, $response, $this->{+base}Repository, {BASE}_MODULE_SCREEN_NAME);
+}
+
+/**
+ * @param Request $request
+ * @param BaseHttpResponse $response
+ * @return BaseHttpResponse
+ */
+public function postSorting(Request $request, BaseHttpResponse $response)
+{
+    foreach ($request->input('items', []) as $key => $id) {
+        $this->{+name}Repository->createOrUpdate(['order' => ($key + 1)], ['id' => $id]);
+    }
+
+    return $response->setMessage(trans('plugins/{-module}::{-name}.update_{base}_position_success'));
+}

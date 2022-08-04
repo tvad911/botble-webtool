@@ -1,0 +1,236 @@
+<?php
+
+namespace Botble\{Module}\Services;
+
+use Botble\{Module}\Models\{Base};
+use Botble\{Module}\Models\{Name}File;
+use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
+use Botble\Media\Http\Resources\FileResource;
+use Botble\{Module}\Services\Abstracts\Store{Name}ServiceAbstract;
+use File;
+use Image;
+use Throwable;
+use Auth;
+
+class Store{Name}Service extends Store{Name}ServiceAbstract
+{
+    /**
+     * @param Request $request
+     * @param {Base} ${+base}
+     *
+     * @return mixed|void
+     */
+    public function execute(Request $request, {Base} ${+base})
+    {
+        if($request->hasfile('{names}'))
+        {
+            foreach($request->file('{names}') as $file)
+            {
+                $log = $this->handleUpload($file, '{modules}/{name}', ${+base});
+                if($log != null && isset($log['message'])){
+                    Log::error($log['message']);
+                }
+            }
+        }
+    }
+
+    /**
+     * @param Request $request
+     * @param {Base} ${+base}
+     *
+     * @return mixed|void
+     */
+    public function handleUpdate(Request $request, {Base} ${+base})
+    {
+        /**
+         * 1. If old file empty remove file
+         */
+        if (empty(json_decode($request->input('{name}')))) {
+            $files = $this->{+name}Repository->allBy(['{base}_id' => ${+base}->id]);
+
+            if($files->isNotEmpty())
+            {
+                foreach ($files as $file) {
+                    if($this->uploadManager->deleteFile($file->folder . '/' . $file->url))
+                    {
+                        $this->{+name}Repository->deleteBy(['id' => $file->id, '{base}_id' => ${+base}->id]);
+                    }
+                }
+            }
+        }
+
+        /**
+         * 2.Remove old file, update information
+         */
+        $arrFiles = json_decode($request->input('{name}'));
+        $listFile = collect($arrFiles);
+
+        if($listFile->isNotEmpty())
+        {
+            // 1. Update description
+            foreach ($listFile as $item) {
+                $file = $this->{+name}Repository->getFirstBy(['id' => $item->id, '{base}_id' => ${+base}->id]);
+                if($file)
+                {
+                    $file->options = $item->options;
+                    $this->{+name}Repository->createOrUpdate($file);
+                }
+            }
+
+            // 2. Remove old file
+            $arrFile = $listFile->pluck('id')->all();
+            $files = $this->{+name}Repository->allBy(['{base}_id' => ${+base}->id, ['id', 'not_in', $arrFile]]);
+            if($files->isNotEmpty())
+            {
+                foreach ($files as $file) {
+                    if($this->uploadManager->deleteFile($file->folder . '/' . $file->url))
+                    {
+                        $this->{+name}Repository->deleteBy(['id' => $file->id, '{base}_id' => ${+base}->id]);
+                    }
+                }
+            }
+        }
+
+        /**
+         * 3. Upload new file
+         */
+        if($request->hasfile('{names}'))
+        {
+            foreach($request->file('{names}') as $file)
+            {
+                $log = $this->handleUpload($file, '{modules}/{name}', ${+base});
+                if($log != null){
+                    if(isset($log['message']))
+                        Log::error($log['message']);
+                }
+            }
+        }
+    }
+
+    /**
+     * @param UploadedFile $fileUpload
+     * @param int $folderId
+     * @param string $path
+     * @return JsonResponse|array
+     */
+    public function handleUpload($fileUpload, $folderPath = '{modules}/{name}', ${+base})
+    {
+        if (!$fileUpload) {
+            return [
+                'error'   => true,
+                'message' => trans('plugins/core::media.can_not_detect_file_type'),
+            ];
+        }
+
+        try {
+            $file = $this->{+name}Repository->getModel();
+
+            if ($fileUpload->getSize() / 1024 > (int)config('plugins.{-module}.file.max_file_size_upload')) {
+                return [
+                    'error'   => true,
+                    'message' => trans('plugins/core::media.file_too_big',
+                        ['size' => config('plugins.core.file.max_file_size_upload')]),
+                ];
+            }
+
+            $fileExtension = $fileUpload->getClientOriginalExtension();
+
+            if (!in_array($fileExtension, explode(',', config('plugins.{-module}.file.allowed_mime_types')))) {
+                return [
+                    'error'   => true,
+                    'message' => trans('plugins/core::media.can_not_detect_file_type'),
+                ];
+            }
+
+            $folderPath = $folderPath . '/' . ${+base}->id;
+
+            $file->name = $this->{+name}Repository->createName(File::name($fileUpload->getClientOriginalName()), $folderPath);
+
+            $fileName = $this->{+name}Repository->createSlug($file->name, $fileExtension, Storage::path($folderPath));
+
+            $filePath = $fileName;
+
+            if ($folderPath) {
+                $filePath = $folderPath . '/' . $filePath;
+            }
+
+            $content = File::get($fileUpload->getRealPath());
+
+            $this->uploadManager->saveFile($filePath, $content);
+
+            $data = $this->uploadManager->fileDetails($filePath);
+
+            if (empty($data['mime_type'])) {
+                return [
+                    'error'   => true,
+                    'message' => trans('plugins/core::media.can_not_detect_file_type'),
+                ];
+            }
+
+            $file->url = $fileName;
+            $file->size = $data['size'];
+            $file->mime_type = $data['mime_type'];
+            $file->folder = $folderPath;
+            $file->user_id = Auth::check() ? Auth::user()->getKey() : 0;
+            $file->{base}_id = ${+base}->id;
+            $this->{+name}Repository->createOrUpdate($file);
+
+            if ($file->canGenerateThumbnails()) {
+                foreach (config('plugins.{-module}.file.sizes', []) as $size) {
+                    $readableSize = explode('x', $size);
+
+                    $this->thumbnailService
+                        ->setImage($fileUpload->getRealPath())
+                        ->setSize($readableSize[0], $readableSize[1])
+                        ->setDestinationPath($folderPath)
+                        ->setFileName(File::name($fileName) . '-' . $size . '.' . $fileExtension)
+                        ->save();
+                }
+            }
+
+            return [
+                'error' => false,
+                'data'  => new FileResource($file),
+            ];
+        } catch (Exception $ex) {
+            return [
+                'error'   => true,
+                'message' => $ex->getMessage(),
+            ];
+        }
+    }
+    /**
+     * Delete file
+     * @param  [type] $listFile [description]
+     * @return [type]           [description]
+     */
+    public function deleteFile(Request $request, {Base} ${+base})
+    {
+        try{
+            $listFile = ${+base}->{+name};
+            if(!empty($listFile))
+            {
+                foreach ($listFile as $file) {
+                    ${+name} = $this->{+name}Repository->findOrFail($file->id);
+                    if(isset(${+name}))
+                    {
+                        if($this->uploadManager->deleteFile(${+name}->folder . '/' . ${+name}->url))
+                        {
+                            $this->{+name}Repository->deleteBy(['id' => ${+name}->id, '{base}_id' => ${+base}->id]);
+                        }
+                    }
+                }
+
+                $this->uploadManager->deleteDirectory(${+name}->folder);
+            }
+
+        } catch (Exception $ex) {
+            Log::error($ex->getMessage());
+        }
+    }
+}

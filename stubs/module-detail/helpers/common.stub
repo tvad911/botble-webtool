@@ -1,0 +1,17 @@
+<?php
+
+use Botble\{Module}\Repositories\Interfaces\{Base}Interface;
+use Botble\{Module}\Repositories\Interfaces\{Name}Interface;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+
+if (!function_exists('get_all_{names}')) {
+    /**
+     * @param array $condition
+     * @return mixed
+     */
+    function get_all_{names}(array $condition = [])
+    {
+        return app({Name}Interface::class)->allBy($condition);
+    }
+}

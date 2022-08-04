@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'name'   => '{++Names}',
+    'create' => 'New {++name}',
+    'edit'   => 'Edit {++name}',
+    'menu'   => '{++Names}',
+
+    'name'                    => "Name",
+    'description'             => 'Description',
+    'description_placeholder' => 'Please input description',
+    'link'                    => 'Link',
+    'image'                   => 'Image',
+    'order'                   => 'Order',
+    'order_by_placeholder'    => 'Please input order',
+
+    'add_new'                        => 'Add new',
+    'save_sorting'                   => 'Save sorting',
+    'key'                            => 'Key',
+    '{names}'                        => '{++Names}',
+    'update_{base}_position_success' => 'Updated {base} position successfully!',
+    'create_new_{base}'              => 'Create a new {base}',
+    'edit_{base}'                    => 'Edit {base} #:id',
+    'select_{base}'                  => 'Select a {base}',
+];
