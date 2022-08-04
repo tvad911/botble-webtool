@@ -6,10 +6,10 @@ use Botble\{Module}\Repositories\Interfaces\{Name}Interface;
 /**
  * @var {Name}Interface;
  */
-protected $simpleSliderItemRepository;
+protected ${++name}Repository;
 
 /**
- * SimpleSliderController constructor.
+ * {Base}Controller constructor.
  * @param {Base}Interface; ${+base}Repository
  * @param {Name}Interface; ${+name}Repository
  */

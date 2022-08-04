@@ -1,7 +1,7 @@
 {
-    "name": "Upload file generate",
+    "name": "WebTool",
     "namespace": "Botble\\WebTool\\",
-    "provider": "Botble\\WebTool\\Providers\\DevToolServiceProvider",
+    "provider": "Botble\\WebTool\\Providers\\WebToolServiceProvider",
     "author": "Botble Technologies",
     "url": "https://botble.com",
     "version": "5.8",
